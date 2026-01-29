@@ -20,9 +20,7 @@ class _EkskulListPageState extends State<EkskulListPage> {
   }
 
   Future<void> fetchEkskul() async {
-    final url = Uri.parse(
-      "http://10.113.3.133/api_fluttergexis/get_ekskul.php",
-    );
+    final url = Uri.parse("http://10.113.3.70/api_fluttergexis/get_ekskul.php");
 
     try {
       final response = await http.get(url);

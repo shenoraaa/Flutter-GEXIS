@@ -30,7 +30,7 @@ class _RegisterPageState extends State<RegisterPage> {
 
     try {
       final response = await http.post(
-        Uri.parse('http://10.113.3.133/api_fluttergexis/register.php'),
+        Uri.parse('http://10.113.3.70/api_fluttergexis/register.php'),
         body: {
           'nama': namaC.text.trim(),
           'username': usernameC.text.trim(),

@@ -38,16 +38,17 @@ class _TambahEkskulPageState extends State<TambahEkskulPage> {
   Future<void> simpanEkskul() async {
     if (namaEkskulC.text.isEmpty ||
         pembinaC.text.isEmpty ||
-        deskripsiC.text.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Semua field wajib diisi')));
+        deskripsiC.text.isEmpty ||
+        imageBytes == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Semua field & gambar wajib diisi')),
+      );
       return;
     }
 
     try {
       final uri = Uri.parse(
-        'http://10.113.3.133/api_fluttergexis/tambah_ekskul.php',
+        'http://10.113.3.70/api_fluttergexis/tambah_ekskul.php',
       );
 
       final request = http.MultipartRequest('POST', uri);
@@ -58,24 +59,19 @@ class _TambahEkskulPageState extends State<TambahEkskulPage> {
         'deskripsi': deskripsiC.text.trim(),
       });
 
-      // ✅ WAJIB: KIRIM GAMBAR
-      if (pickedImage != null) {
-        request.files.add(
-          await http.MultipartFile.fromPath(
-            'gambar',
-            pickedImage!.path,
-            contentType: MediaType('image', 'jpeg'),
-          ),
-        );
-      }
+      // ✅ SUPPORT WEB & ANDROID
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'gambar',
+          imageBytes!,
+          filename: pickedImage!.name,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
 
-      final streamedResponse = await request.send();
-      final responseBody = await streamedResponse.stream.bytesToString();
-
-      debugPrint('STATUS: ${streamedResponse.statusCode}');
-      debugPrint('BODY: $responseBody');
-
-      final data = json.decode(responseBody);
+      final response = await request.send();
+      final body = await response.stream.bytesToString();
+      final data = json.decode(body);
 
       if (data['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,7 +87,6 @@ class _TambahEkskulPageState extends State<TambahEkskulPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('ERROR: $e')));
-      debugPrint('ERROR DETAIL: $e');
     }
   }
 

@@ -32,7 +32,7 @@ class _LoginPageState extends State<LoginPage> {
 
     try {
       final response = await http.post(
-        Uri.parse("http://10.113.3.133/api_fluttergexis/login.php"),
+        Uri.parse("http://10.113.3.70/api_fluttergexis/login.php"),
         body: {'username': usernameC.text.trim(), 'password': passwordC.text},
       );
 
@@ -120,7 +120,7 @@ class _LoginPageState extends State<LoginPage> {
 
               const SizedBox(height: 12),
 
-              // 🔒 REGISTER HANYA UNTUK SISWA
+              //  REGISTER  SISWA
               TextButton(
                 onPressed: () {
                   Navigator.push(
