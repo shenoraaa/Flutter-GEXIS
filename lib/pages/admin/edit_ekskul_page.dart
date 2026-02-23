@@ -22,7 +22,7 @@ class _EditEkskulPageState extends State<EditEkskulPage> {
   File? imageFile;
   bool isLoading = false;
 
-  final String baseUrl = "http://10.113.3.70/api_fluttergexis/";
+  final String baseUrl = "http://192.168.1.7/api_fluttergexis/";
 
   @override
   void initState() {

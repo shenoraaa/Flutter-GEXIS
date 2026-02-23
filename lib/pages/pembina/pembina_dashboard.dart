@@ -2,9 +2,13 @@ import 'package:flutter/material.dart';
 import 'kelola_siswa_page.dart';
 import 'absen_siswa_page.dart';
 import 'notifikasi_pembina_page.dart';
+import 'pendaftaran_siswa_page.dart';
 
 class PembinaDashboard extends StatelessWidget {
   const PembinaDashboard({super.key});
+
+  // GANTI sesuai id ekskul pembina
+  final int idEkskulPembina = 2;
 
   @override
   Widget build(BuildContext context) {
@@ -27,6 +31,30 @@ class PembinaDashboard extends StatelessWidget {
             const SizedBox(height: 8),
             const Text('Kelola anggota ekstrakurikuler'),
             const SizedBox(height: 32),
+
+            /// PENDAFTARAN SISWA
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.assignment),
+                label: const Text('Pendaftaran Siswa'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.purple,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                ),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          PendaftaranSiswaPage(idEkskul: idEkskulPembina),
+                    ),
+                  );
+                },
+              ),
+            ),
+
+            const SizedBox(height: 12),
 
             /// KELOLA SISWA
             SizedBox(

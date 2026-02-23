@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
@@ -14,56 +14,64 @@ class TambahEkskulPage extends StatefulWidget {
 }
 
 class _TambahEkskulPageState extends State<TambahEkskulPage> {
-  final namaEkskulC = TextEditingController();
-  final pembinaC = TextEditingController();
-  final deskripsiC = TextEditingController();
+  final TextEditingController namaController = TextEditingController();
+  final TextEditingController pembinaController = TextEditingController();
+  final TextEditingController deskripsiController = TextEditingController();
 
   final ImagePicker picker = ImagePicker();
-  Uint8List? imageBytes;
+
+  Uint8List? selectedImageBytes;
   XFile? pickedImage;
 
+  bool isLoading = false;
+
   /* ================= PILIH GAMBAR ================= */
-  Future<void> pilihGambar() async {
-    final img = await picker.pickImage(source: ImageSource.gallery);
-    if (img != null) {
-      final bytes = await img.readAsBytes();
+  Future<void> pickImage() async {
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      final bytes = await image.readAsBytes();
       setState(() {
-        pickedImage = img;
-        imageBytes = bytes;
+        pickedImage = image;
+        selectedImageBytes = bytes;
       });
     }
   }
 
   /* ================= SIMPAN ================= */
-  Future<void> simpanEkskul() async {
-    if (namaEkskulC.text.isEmpty ||
-        pembinaC.text.isEmpty ||
-        deskripsiC.text.isEmpty ||
-        imageBytes == null) {
+  Future<void> simpan() async {
+    if (namaController.text.isEmpty ||
+        pembinaController.text.isEmpty ||
+        deskripsiController.text.isEmpty ||
+        selectedImageBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Semua field & gambar wajib diisi')),
+        const SnackBar(
+          content: Text("Semua field & gambar wajib diisi"),
+          backgroundColor: Colors.red,
+        ),
       );
       return;
     }
 
+    setState(() => isLoading = true);
+
     try {
       final uri = Uri.parse(
-        'http://10.113.3.70/api_fluttergexis/tambah_ekskul.php',
+        'http://192.168.1.7/api_fluttergexis/tambah_ekskul.php',
       );
 
       final request = http.MultipartRequest('POST', uri);
 
       request.fields.addAll({
-        'nama_ekskul': namaEkskulC.text.trim(),
-        'pembina': pembinaC.text.trim(),
-        'deskripsi': deskripsiC.text.trim(),
+        'nama_ekskul': namaController.text.trim(),
+        'pembina': pembinaController.text.trim(),
+        'deskripsi': deskripsiController.text.trim(),
       });
 
-      // ✅ SUPPORT WEB & ANDROID
       request.files.add(
         http.MultipartFile.fromBytes(
           'gambar',
-          imageBytes!,
+          selectedImageBytes!,
           filename: pickedImage!.name,
           contentType: MediaType('image', 'jpeg'),
         ),
@@ -73,20 +81,48 @@ class _TambahEkskulPageState extends State<TambahEkskulPage> {
       final body = await response.stream.bytesToString();
       final data = json.decode(body);
 
+      if (!mounted) return;
+
       if (data['success'] == true) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Ekskul berhasil ditambahkan')),
+          const SnackBar(
+            content: Text("Ekskul berhasil ditambahkan"),
+            backgroundColor: Colors.green,
+          ),
         );
-        Navigator.pop(context);
+
+        // reset form biar aman
+        namaController.clear();
+        pembinaController.clear();
+        deskripsiController.clear();
+
+        setState(() {
+          selectedImageBytes = null;
+          pickedImage = null;
+        });
+
+        // Delay sebelum kembali (anti putih)
+        await Future.delayed(const Duration(milliseconds: 500));
+
+        if (mounted) Navigator.pop(context, true);
       } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(data['message'])));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data['message'] ?? "Gagal menambahkan"),
+            backgroundColor: Colors.red,
+          ),
+        );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('ERROR: $e')));
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("ERROR: $e"), backgroundColor: Colors.red),
+      );
+    }
+
+    if (mounted) {
+      setState(() => isLoading = false);
     }
   }
 
@@ -94,86 +130,165 @@ class _TambahEkskulPageState extends State<TambahEkskulPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xfff1f5f9),
       appBar: AppBar(
-        title: const Text('Tambah Ekstrakurikuler'),
-        backgroundColor: Colors.red,
+        title: Text(
+          "Tambah Ekstrakurikuler",
+          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black,
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(24),
-        children: [
-          GestureDetector(
-            onTap: pilihGambar,
-            child: Container(
-              height: 180,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: Colors.grey),
-                color: Colors.grey.shade200,
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(30),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight - 60,
+                ),
+                child: Container(
+                  padding: const EdgeInsets.all(30),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// IMAGE
+                      Expanded(
+                        flex: 4,
+                        child: GestureDetector(
+                          onTap: pickImage,
+                          child: Container(
+                            height: 350,
+                            decoration: BoxDecoration(
+                              color: const Color(0xfff8fafc),
+                              borderRadius: BorderRadius.circular(15),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: selectedImageBytes == null
+                                ? Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.add_photo_alternate_outlined,
+                                        size: 80,
+                                        color: Colors.grey,
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Text(
+                                        "Upload Gambar",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 18,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: Image.memory(
+                                      selectedImageBytes!,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(width: 40),
+
+                      /// FORM
+                      Expanded(
+                        flex: 6,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Informasi Ekstrakurikuler",
+                              style: GoogleFonts.poppins(
+                                fontSize: 26,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            const SizedBox(height: 25),
+                            _buildTextField(
+                              controller: namaController,
+                              hint: "Nama Ekstrakurikuler",
+                            ),
+                            const SizedBox(height: 20),
+                            _buildTextField(
+                              controller: pembinaController,
+                              hint: "Nama Pembina",
+                            ),
+                            const SizedBox(height: 20),
+                            _buildTextField(
+                              controller: deskripsiController,
+                              hint: "Deskripsi",
+                              maxLines: 5,
+                            ),
+                            const SizedBox(height: 30),
+                            SizedBox(
+                              width: double.infinity,
+                              height: 55,
+                              child: ElevatedButton(
+                                onPressed: isLoading ? null : simpan,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xff0f172a),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                child: isLoading
+                                    ? const CircularProgressIndicator(
+                                        color: Colors.white,
+                                      )
+                                    : Text(
+                                        "Simpan",
+                                        style: GoogleFonts.poppins(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w500,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              child: imageBytes == null
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.image, size: 40),
-                          SizedBox(height: 8),
-                          Text('Pilih Gambar Ekskul'),
-                        ],
-                      ),
-                    )
-                  : ClipRRect(
-                      borderRadius: BorderRadius.circular(14),
-                      child: Image.memory(
-                        imageBytes!,
-                        fit: BoxFit.cover,
-                        width: double.infinity,
-                      ),
-                    ),
             ),
-          ),
+          );
+        },
+      ),
+    );
+  }
 
-          const SizedBox(height: 24),
-
-          TextField(
-            controller: namaEkskulC,
-            decoration: const InputDecoration(
-              labelText: 'Nama Ekstrakurikuler',
-              border: OutlineInputBorder(),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: pembinaC,
-            decoration: const InputDecoration(
-              labelText: 'Nama Pembina',
-              border: OutlineInputBorder(),
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          TextField(
-            controller: deskripsiC,
-            maxLines: 4,
-            decoration: const InputDecoration(
-              labelText: 'Deskripsi',
-              border: OutlineInputBorder(),
-            ),
-          ),
-
-          const SizedBox(height: 24),
-
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-            ),
-            onPressed: simpanEkskul,
-            child: const Text('SIMPAN'),
-          ),
-        ],
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hint,
+    int maxLines = 1,
+  }) {
+    return TextField(
+      controller: controller,
+      maxLines: maxLines,
+      style: GoogleFonts.poppins(),
+      decoration: InputDecoration(
+        hintText: hint,
+        hintStyle: GoogleFonts.poppins(color: Colors.grey),
+        filled: true,
+        fillColor: const Color(0xfff8fafc),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }

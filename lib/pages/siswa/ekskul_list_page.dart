@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'ekskul_detail_page.dart';
 
 class EkskulListPage extends StatefulWidget {
   const EkskulListPage({super.key});
@@ -20,7 +21,7 @@ class _EkskulListPageState extends State<EkskulListPage> {
   }
 
   Future<void> fetchEkskul() async {
-    final url = Uri.parse("http://10.113.3.70/api_fluttergexis/get_ekskul.php");
+    final url = Uri.parse("http://192.168.1.7/api_fluttergexis/get_ekskul.php");
 
     try {
       final response = await http.get(url);
@@ -34,6 +35,9 @@ class _EkskulListPageState extends State<EkskulListPage> {
       }
     } catch (e) {
       debugPrint('ERROR: $e');
+      setState(() {
+        loading = false;
+      });
     }
   }
 
@@ -46,6 +50,8 @@ class _EkskulListPageState extends State<EkskulListPage> {
       ),
       body: loading
           ? const Center(child: CircularProgressIndicator())
+          : ekskulList.isEmpty
+          ? const Center(child: Text('Data ekskul tidak tersedia'))
           : ListView.builder(
               padding: const EdgeInsets.all(16),
               itemCount: ekskulList.length,
@@ -79,9 +85,11 @@ class _EkskulListPageState extends State<EkskulListPage> {
                     ),
                     trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                     onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Klik ${ekskul['nama_ekskul']}'),
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              EkskulDetailPage(ekskul: ekskul),
                         ),
                       );
                     },

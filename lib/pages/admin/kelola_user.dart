@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:http/http.dart' as http;
 import '../../models/user_model.dart';
 
@@ -15,7 +16,7 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
   List<UserModel> filteredUsers = [];
   bool isLoading = true;
 
-  final String baseUrl = "http://10.113.3.70/api_fluttergexis/";
+  final String baseUrl = "http://192.168.1.7/api_fluttergexis/";
 
   final TextEditingController searchC = TextEditingController();
   final TextEditingController namaC = TextEditingController();
@@ -24,7 +25,12 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
 
   String selectedRole = 'siswa';
 
-  // ================= GET USERS =================
+  @override
+  void initState() {
+    super.initState();
+    getUsers();
+  }
+
   Future<void> getUsers() async {
     try {
       final response = await http.get(Uri.parse("${baseUrl}get_users.php"));
@@ -36,7 +42,6 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
           allUsers = (data['data'] as List)
               .map((e) => UserModel.fromJson(e))
               .toList();
-
           filteredUsers = allUsers;
           isLoading = false;
         });
@@ -46,7 +51,6 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
     }
   }
 
-  // ================= SEARCH =================
   void searchUser(String keyword) {
     setState(() {
       filteredUsers = allUsers.where((user) {
@@ -58,68 +62,61 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
     });
   }
 
-  // ================= TAMBAH USER =================
   Future<void> tambahUser() async {
-    try {
-      final response = await http.post(
-        Uri.parse("${baseUrl}tambah_user.php"),
-        body: {
-          'nama': namaC.text,
-          'username': usernameC.text,
-          'password': passwordC.text,
-          'role': selectedRole,
-        },
-      );
+    final response = await http.post(
+      Uri.parse("${baseUrl}tambah_user.php"),
+      body: {
+        'nama': namaC.text,
+        'username': usernameC.text,
+        'password': passwordC.text,
+        'role': selectedRole,
+      },
+    );
 
-      final data = json.decode(response.body);
+    final data = json.decode(response.body);
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(data['message']),
-          backgroundColor: data['success'] ? Colors.green : Colors.red,
-        ),
-      );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(data['message']),
+        backgroundColor: data['success'] ? Colors.green : Colors.red,
+      ),
+    );
 
-      if (data['success'] == true) {
-        Navigator.pop(context);
-        namaC.clear();
-        usernameC.clear();
-        passwordC.clear();
-        getUsers();
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Gagal koneksi ke server"),
-          backgroundColor: Colors.red,
-        ),
-      );
+    if (data['success'] == true) {
+      Navigator.pop(context);
+      namaC.clear();
+      usernameC.clear();
+      passwordC.clear();
+      getUsers();
     }
   }
 
-  // ================= DIALOG TAMBAH USER =================
   void showTambahUserDialog() {
     showDialog(
       context: context,
-      builder: (_) => AlertDialog(
-        title: const Text("Tambah User"),
-        content: SingleChildScrollView(
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
           child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              TextField(
-                controller: namaC,
-                decoration: const InputDecoration(labelText: "Nama"),
+              Text(
+                "Tambah User",
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-              TextField(
-                controller: usernameC,
-                decoration: const InputDecoration(labelText: "Username"),
-              ),
-              TextField(
-                controller: passwordC,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "Password"),
-              ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 20),
+
+              _inputField(namaC, "Nama"),
+              const SizedBox(height: 12),
+              _inputField(usernameC, "Username"),
+              const SizedBox(height: 12),
+              _inputField(passwordC, "Password", obscure: true),
+              const SizedBox(height: 12),
+
               DropdownButtonFormField(
                 value: selectedRole,
                 items: const [
@@ -130,18 +127,62 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
                 onChanged: (value) {
                   setState(() => selectedRole = value!);
                 },
-                decoration: const InputDecoration(labelText: "Role"),
+                decoration: InputDecoration(
+                  filled: true,
+                  fillColor: Colors.grey.shade100,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 20),
+
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text("Batal", style: GoogleFonts.poppins()),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: tambahUser,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xff0f172a),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text("Simpan", style: GoogleFonts.poppins()),
+                  ),
+                ],
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Batal"),
-          ),
-          ElevatedButton(onPressed: tambahUser, child: const Text("Simpan")),
-        ],
+      ),
+    );
+  }
+
+  Widget _inputField(
+    TextEditingController controller,
+    String hint, {
+    bool obscure = false,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: obscure,
+      style: GoogleFonts.poppins(),
+      decoration: InputDecoration(
+        hintText: hint,
+        filled: true,
+        fillColor: Colors.grey.shade100,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide.none,
+        ),
       ),
     );
   }
@@ -149,30 +190,33 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
   Color roleColor(String role) {
     switch (role) {
       case 'admin':
-        return Colors.red;
+        return const Color(0xffef4444);
       case 'pembina':
-        return Colors.orange;
+        return const Color(0xfff59e0b);
       default:
-        return Colors.green;
+        return const Color(0xff16a34a);
     }
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    getUsers();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xfff1f5f9),
+
       appBar: AppBar(
-        title: const Text("Kelola User"),
-        backgroundColor: Colors.blue,
+        title: Text(
+          "Kelola User",
+          style: GoogleFonts.poppins(
+            fontWeight: FontWeight.w600,
+            color: Colors.black,
+          ),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
       ),
 
       floatingActionButton: FloatingActionButton(
-        backgroundColor: Colors.blue,
+        backgroundColor: const Color(0xff0f172a),
         child: const Icon(Icons.add),
         onPressed: showTambahUserDialog,
       ),
@@ -181,59 +225,117 @@ class _KelolaUserPageState extends State<KelolaUserPage> {
           ? const Center(child: CircularProgressIndicator())
           : Column(
               children: [
-                // 🔍 SEARCH BAR
+                /// SEARCH
                 Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(20),
                   child: TextField(
                     controller: searchC,
                     onChanged: searchUser,
+                    style: GoogleFonts.poppins(),
                     decoration: InputDecoration(
-                      hintText: "Cari nama / username / role",
+                      hintText: "Cari user...",
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
-                      fillColor: Colors.grey.shade100,
+                      fillColor: Colors.white,
                       border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(14),
                         borderSide: BorderSide.none,
                       ),
                     ),
                   ),
                 ),
 
-                // LIST USER
+                /// LIST
                 Expanded(
                   child: filteredUsers.isEmpty
-                      ? const Center(child: Text("User tidak ditemukan"))
+                      ? Center(
+                          child: Text(
+                            "User tidak ditemukan",
+                            style: GoogleFonts.poppins(),
+                          ),
+                        )
                       : ListView.builder(
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
                           itemCount: filteredUsers.length,
                           itemBuilder: (context, index) {
                             final user = filteredUsers[index];
 
-                            return Card(
-                              elevation: 3,
-                              margin: const EdgeInsets.only(bottom: 12),
-                              child: ListTile(
-                                leading: const Icon(Icons.person),
-                                title: Text(
-                                  user.nama,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                            return Container(
+                              margin: const EdgeInsets.only(bottom: 16),
+                              padding: const EdgeInsets.all(18),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(18),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 8),
                                   ),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text("Username: ${user.username}"),
-                                    Text(
-                                      "Role: ${user.role}",
-                                      style: TextStyle(
-                                        color: roleColor(user.role),
+                                ],
+                              ),
+                              child: Row(
+                                children: [
+                                  /// ICON
+                                  CircleAvatar(
+                                    radius: 22,
+                                    backgroundColor: roleColor(
+                                      user.role,
+                                    ).withOpacity(0.15),
+                                    child: Icon(
+                                      Icons.person,
+                                      color: roleColor(user.role),
+                                    ),
+                                  ),
+
+                                  const SizedBox(width: 16),
+
+                                  /// TEXT
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          user.nama,
+                                          style: GoogleFonts.poppins(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Text(
+                                          user.username,
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+
+                                  /// ROLE BADGE
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: roleColor(
+                                        user.role,
+                                      ).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      user.role.toUpperCase(),
+                                      style: GoogleFonts.poppins(
+                                        fontSize: 11,
                                         fontWeight: FontWeight.w600,
+                                        color: roleColor(user.role),
                                       ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                ],
                               ),
                             );
                           },
